@@ -69,12 +69,11 @@ function ShortenForm({ onShortened }) {
   };
 
   return (
-    <div className="shorten-form-container" style={{ margin: '2rem 0', padding: '1.5rem', border: '1px solid #ddd', borderRadius: '8px' }}>
+    <div className="glass-card">
       <h2>Create a ShortLink</h2>
       
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-        
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
           <label htmlFor="originalUrl">Destination URL</label>
           <input 
             type="url" 
@@ -84,11 +83,10 @@ function ShortenForm({ onShortened }) {
             onChange={(e) => setOriginalUrl(e.target.value)}
             disabled={isLoading}
             required
-            style={{ padding: '0.5rem' }}
           />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="form-group">
           <label htmlFor="customAlias">Custom Alias (Optional)</label>
           <input 
             type="text" 
@@ -97,43 +95,41 @@ function ShortenForm({ onShortened }) {
             value={customAlias}
             onChange={(e) => setCustomAlias(e.target.value)}
             disabled={isLoading}
-            style={{ padding: '0.5rem' }}
           />
         </div>
 
         {error && (
-          <div style={{ color: 'red', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            {error}
+          <div className="error-message">
+            ⚠️ {error}
           </div>
         )}
 
         <button 
           type="submit" 
+          className="btn-primary"
           disabled={isLoading}
-          style={{ padding: '0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >
           {isLoading ? 'Shortening...' : 'Shorten URL'}
         </button>
-
       </form>
 
       {successResult && (
-        <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#e0f2fe', borderRadius: '4px', border: '1px solid #bae6fd' }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>Success!</p>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <a href={successResult.shortUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#0369a1', textDecoration: 'none', fontWeight: 'bold' }}>
+        <div className="success-box">
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: 'var(--text-main)' }}>Success! Your link is ready:</p>
+          <div className="flex-row">
+            <a href={successResult.shortUrl} target="_blank" rel="noopener noreferrer">
               {successResult.shortUrl}
             </a>
             <button 
               onClick={handleCopy}
-              style={{ padding: '0.4rem 0.8rem', background: copied ? '#10b981' : '#f8fafc', color: copied ? 'white' : '#334155', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer' }}
+              className="btn-secondary"
+              style={copied ? { background: 'var(--success)', color: 'white', borderColor: 'var(--success)' } : {}}
             >
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
         </div>
       )}
-
     </div>
   );
 }
