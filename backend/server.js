@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import config from './config.js';
 import shortenRoutes from './routes/shorten_routes.js';
 import redirectRoutes from './routes/redirect_routes.js';
+import statsRoutes from './routes/stats_routes.js';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.json());
 // --- Routes ---
 
 app.use('/api', shortenRoutes);
+app.use('/api', statsRoutes);
 
 // Mount the redirect routes at the root level, so URLs look like localhost:8000/aB3x
 app.use('/', redirectRoutes);
