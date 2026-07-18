@@ -1,26 +1,38 @@
 import Redis from 'ioredis';
 import config from '../config.js';
+import hashRing from './hashRing_service.js';
 
-// For now (before sharding is wired in), create ONE client connected to the first shard
-const redis = new Redis(config.REDIS_SHARD_URLS[0]);
+// Create a dictionary of all our active Redis shards
+const shardClients = {
+  shard0: new Redis(config.REDIS_SHARD_URLS[0]),
+  shard1: new Redis(config.REDIS_SHARD_URLS[1]),
+  shard2: new Redis(config.REDIS_SHARD_URLS[2])
+};
 
-// Handle connection errors gracefully so they don't crash the Node.js process
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err.message);
+// Handle connection errors gracefully for all shards
+Object.entries(shardClients).forEach(([shardName, client]) => {
+  client.on('error', (err) => {
+    console.error(`Redis connection error on ${shardName}:`, err.message);
+  });
 });
 
 /**
- * Gets a parsed JSON value from the cache.
+ * CORE LOGIC: Find the right shard for a specific key
  * 
- * WHY WE SWALLOW ERRORS HERE:
- * Redis is a performance optimization in this architecture, not a source of truth. 
- * If Redis goes down or blips, the app should degrade gracefully and just fall back 
- * to reading from PostgreSQL (which will be slower, but will still work). 
- * Treating a cache outage as a fatal error would make the whole system LESS reliable 
- * than not having a cache at all.
+ * WHY MUST READS AND WRITES USE THE SAME SHARD?
+ * If `setCached` randomly picked shard1 for "url:aB3x", but `getCached` randomly 
+ * checked shard2, it would look like a Cache Miss every single time.
+ * Consistent Hashing guarantees that for the exact same key, `getShardForKey` 
+ * will ALWAYS mathematically return the exact same shard.
  */
+function getClientForKey(key) {
+  const shardName = hashRing.getShardForKey(key);
+  return shardClients[shardName];
+}
+
 export async function getCached(key) {
   try {
+    const redis = getClientForKey(key);
     const data = await redis.get(key);
     if (!data) return null;
     return JSON.parse(data);
@@ -30,25 +42,19 @@ export async function getCached(key) {
   }
 }
 
-/**
- * Saves a JSON value to the cache with an expiration (TTL).
- */
 export async function setCached(key, value, ttlSeconds = config.CACHE_TTL_SECONDS) {
   try {
+    const redis = getClientForKey(key);
     const stringified = JSON.stringify(value);
-    // SETEX = SET with EXpiration
     await redis.setex(key, ttlSeconds, stringified);
   } catch (error) {
     console.error(`Cache Write Error for key ${key}:`, error.message);
-    // We swallow the error here too, as a failed cache write shouldn't break the user's request.
   }
 }
 
-/**
- * Deletes a value from the cache.
- */
 export async function deleteCached(key) {
   try {
+    const redis = getClientForKey(key);
     await redis.del(key);
   } catch (error) {
     console.error(`Cache Delete Error for key ${key}:`, error.message);
