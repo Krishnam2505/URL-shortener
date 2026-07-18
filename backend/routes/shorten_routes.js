@@ -10,13 +10,30 @@ const router = express.Router();
 // We do NOT apply it to the redirect route (the "Read Path") because we WANT 
 // redirects to be as fast and unrestricted as possible for legitimate users. 
 // Link creation is the expensive, abuse-prone path that needs throttling.
-router.post('/shorten', rateLimitMiddleware, async (req, res) => {
+router.post('/shorten', rateLimitMiddleware, async (req, res, next) => {
   try {
     const { originalUrl, customAlias } = req.body;
 
     // Validation: Ensure the user actually provided a URL
     if (!originalUrl) {
       return res.status(400).json({ error: "originalUrl is required" });
+    }
+
+    // 1. Validate originalUrl shape
+    // We validate the shape here because failing fast with a clear message is better
+    // than silently creating a broken short link that goes nowhere.
+    try {
+      new URL(originalUrl);
+    } catch (err) {
+      return res.status(400).json({ error: "Please provide a valid URL, including http:// or https://" });
+    }
+
+    // 2. Validate customAlias shape (if provided)
+    if (customAlias) {
+      const aliasRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+      if (!aliasRegex.test(customAlias)) {
+        return res.status(400).json({ error: "Custom alias must be 3-20 characters, letters/numbers/hyphens/underscores only" });
+      }
     }
 
     // Call our core business logic
@@ -35,9 +52,8 @@ router.post('/shorten', rateLimitMiddleware, async (req, res) => {
       return res.status(409).json({ error: "That custom alias is already taken" });
     }
     
-    // For any other unexpected database error, log it and return a 500
-    console.error("Error creating short link:", error);
-    res.status(500).json({ error: "Internal server error" });
+    // For any other unexpected error, pass it to the global error handler
+    next(error);
   }
 });
 

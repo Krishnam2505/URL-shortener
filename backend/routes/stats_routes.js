@@ -5,7 +5,7 @@ const router = express.Router();
 
 // GET /api/stats/:shortCode
 // Returns the analytics data for a given short link.
-router.get('/stats/:shortCode', async (req, res) => {
+router.get('/stats/:shortCode', async (req, res, next) => {
   try {
     const { shortCode } = req.params;
     
@@ -23,8 +23,7 @@ router.get('/stats/:shortCode', async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Error fetching stats:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 });
 

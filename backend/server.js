@@ -6,6 +6,7 @@ import config from './config.js';
 import shortenRoutes from './routes/shorten_routes.js';
 import redirectRoutes from './routes/redirect_routes.js';
 import statsRoutes from './routes/stats_routes.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -42,6 +43,11 @@ app.get('/', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: "Test route works" });
 });
+
+// --- Global Error Handler ---
+// This MUST be the absolute last app.use() so that it catches errors
+// from any of the routes or middleware defined above.
+app.use(errorHandler);
 
 // --- Server Startup ---
 

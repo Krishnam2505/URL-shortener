@@ -7,7 +7,7 @@ const router = express.Router();
 
 // GET /:shortCode — The hottest path in the system
 // This must be registered LAST in server.js because it acts as a catch-all route.
-router.get('/:shortCode', async (req, res) => {
+router.get('/:shortCode', async (req, res, next) => {
   try {
     const { shortCode } = req.params;
     const cacheKey = `url:${shortCode}`;
@@ -46,11 +46,7 @@ router.get('/:shortCode', async (req, res) => {
     res.redirect(302, originalUrl);
 
   } catch (error) {
-    console.error("Error redirecting:", error);
-    res.status(500).send(`
-      <h1>500 - Server Error</h1>
-      <p>Something went wrong on our end.</p>
-    `);
+    next(error);
   }
 });
 
