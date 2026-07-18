@@ -1,6 +1,7 @@
 import express from 'express';
 import { getOriginalUrl } from '../services/shortener_service.js';
 import { getCached, setCached } from '../services/cache_service.js';
+import { incrementClickCount } from '../services/analytics_service.js';
 
 const router = express.Router();
 
@@ -40,6 +41,8 @@ router.get('/:shortCode', async (req, res) => {
     }
 
     // 302 means "Found / Temporary Redirect"
+    // We increment the click count asynchronously so it doesn't slow down the redirect
+    incrementClickCount(shortCode);
     res.redirect(302, originalUrl);
 
   } catch (error) {

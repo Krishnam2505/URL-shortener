@@ -39,6 +39,10 @@ app.get('/', (req, res) => {
   res.json({ message: "ShortLink API is running" });
 });
 
+app.get('/api/test', (req, res) => {
+  res.json({ message: "Test route works" });
+});
+
 // --- Server Startup ---
 
 app.listen(config.PORT, () => {

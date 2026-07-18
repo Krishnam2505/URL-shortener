@@ -17,3 +17,18 @@ export async function getStats(shortCode) {
   
   return result.rows[0];
 }
+
+/**
+ * Increments the click count for a given short code.
+ * This is designed to be called asynchronously in the background.
+ */
+export async function incrementClickCount(shortCode) {
+  try {
+    await pool.query(
+      `UPDATE links SET click_count = click_count + 1 WHERE short_code = $1`,
+      [shortCode]
+    );
+  } catch (error) {
+    console.error(`Failed to increment click count for ${shortCode}:`, error);
+  }
+}
