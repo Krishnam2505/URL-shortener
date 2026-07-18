@@ -39,10 +39,16 @@ router.post('/shorten', rateLimitMiddleware, async (req, res, next) => {
     // Call our core business logic
     const result = await createShortLink(originalUrl, customAlias);
     
+    // Dynamically build the short URL based on the request host
+    // If it's localhost, we use http. If it's a real domain (like Render), we use https.
+    const host = req.get('host');
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${host}`;
+
     // Return a 201 Created status, along with the data
     res.status(201).json({
       shortCode: result.shortCode,
-      shortUrl: `http://localhost:${config.PORT}/${result.shortCode}`,
+      shortUrl: `${baseUrl}/${result.shortCode}`,
       originalUrl: result.originalUrl
     });
 
