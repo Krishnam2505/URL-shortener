@@ -40,9 +40,10 @@ router.post('/shorten', rateLimitMiddleware, async (req, res, next) => {
     const result = await createShortLink(originalUrl, customAlias);
     
     // Dynamically build the short URL based on the request host
-    // If it's localhost, we use http. If it's a real domain (like Render), we use https.
-    const host = req.get('host');
-    const protocol = host.includes('localhost') ? 'http' : 'https';
+    // Render and other cloud providers sit behind a reverse proxy, so we must check 
+    // the 'x-forwarded-host' header first before falling back to the raw host.
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const protocol = req.headers['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
     const baseUrl = `${protocol}://${host}`;
 
     // Return a 201 Created status, along with the data
