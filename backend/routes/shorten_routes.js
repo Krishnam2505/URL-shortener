@@ -1,10 +1,16 @@
 import express from 'express';
 import { createShortLink } from '../services/shortener_service.js';
 import config from '../config.js';
+import { rateLimitMiddleware } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
 
-router.post('/shorten', async (req, res) => {
+// POST /api/shorten
+// We ONLY apply the rate limiter here on link creation (the "Write Path").
+// We do NOT apply it to the redirect route (the "Read Path") because we WANT 
+// redirects to be as fast and unrestricted as possible for legitimate users. 
+// Link creation is the expensive, abuse-prone path that needs throttling.
+router.post('/shorten', rateLimitMiddleware, async (req, res) => {
   try {
     const { originalUrl, customAlias } = req.body;
 
