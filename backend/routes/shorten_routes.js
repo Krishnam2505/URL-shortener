@@ -38,13 +38,12 @@ router.post('/shorten', rateLimitMiddleware, async (req, res, next) => {
 
     // Call our core business logic
     const result = await createShortLink(originalUrl, customAlias);
-    
-    // Dynamically build the short URL based on the request host
-    // Render and other cloud providers sit behind a reverse proxy, so we must check 
-    // the 'x-forwarded-host' header first before falling back to the raw host.
-    const host = req.headers['x-forwarded-host'] || req.get('host');
-    const protocol = req.headers['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
-    const baseUrl = `${protocol}://${host}`;
+
+    // Dynamically build the short URL.
+    // Cloud providers like Render often rewrite the 'Host' header to internal IPs (like localhost:10000).
+    // Luckily, Render automatically injects 'RENDER_EXTERNAL_URL' into the environment.
+    // We use that if available, otherwise fallback to localhost for local development.
+    const baseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${config.PORT}`;
 
     // Return a 201 Created status, along with the data
     res.status(201).json({
@@ -58,7 +57,7 @@ router.post('/shorten', rateLimitMiddleware, async (req, res, next) => {
     if (error.message === "Collision") {
       return res.status(409).json({ error: "That custom alias is already taken" });
     }
-    
+
     // For any other unexpected error, pass it to the global error handler
     next(error);
   }
